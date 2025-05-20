@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Jogo da Memória</title>
+    <style>
+        /* Estilos CSS para a página e o jogo */
+        body {
+            font-family: 'Inter', sans-serif; /* Usando a fonte Inter */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            background-color: #e0f2f7; /* Um azul claro suave */
+            color: #2c3e50; /* Cor de texto mais escura para contraste */
+            overflow: hidden; /* Evita barras de rolagem indesejadas */
+        }
+
+        .game-container {
+            background-color: #ffffff;
+            padding: 40px;
+            border-radius: 20px; /* Cantos mais arredondados */
+            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.15); /* Sombra mais pronunciada */
+            text-align: center;
+            max-width: 90%; /* Responsividade */
+            width: 500px; /* Largura máxima para o container do jogo */
+            box-sizing: border-box; /* Inclui padding e borda na largura */
+        }
+
+        h1 {
+            color: #3498db; /* Um tom de azul vibrante */
+            margin-bottom: 35px;
+            font-size: 2.5em;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.05);
+        }
+
+        .game-board {
+            display: grid;
+            /* Ajusta as colunas para serem fluidas e responsivas */
+            grid-template-columns: repeat(auto-fit, minmax(80px, 1fr));
+            grid-template-rows: repeat(4, 1fr); /* 4 linhas, altura fluida */
+            gap: 12px; /* Espaçamento entre as cartas */
+            perspective: 1000px;
+            margin-bottom: 25px;
+            width: 100%; /* Ocupa a largura total do container */
+            max-width: 450px; /* Largura máxima para o tabuleiro */
+            margin-left: auto;
+            margin-right: auto;
+            aspect-ratio: 1 / 1; /* Mantém o tabuleiro quadrado */
+        }
+
+        .card {
+            width: 100%; /* Ocupa a largura disponível na célula do grid */
+            padding-bottom: 100%; /* Truque para manter a proporção 1:1 da carta */
+            position: relative;
+            transform-style: preserve-3d;
+            transition: transform 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275); /* Animação mais suave */
+            cursor: pointer;
+            border-radius: 10px; /* Cantos arredondados para as cartas */
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .card.flipped {
+            transform: rotateY(180deg);
+        }
+
+        .card .card-face {
+            width: 100%;
+            height: 100%;
+            position: absolute;
+            top: 0;
+            left: 0;
+            backface-visibility: hidden;
+            border-radius: 10px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 3em; /* Tamanho do ícone */
+            font-weight: bold;
+            box-sizing: border-box; /* Inclui padding e borda na largura/altura */
+        }
+
+        .card-face.front {
+            background-color: #2ecc71; /* Verde esmeralda */
+            color: #ffffff;
+            transform: rotateY(180deg);
+        }
+
+        .card-face.back {
+            background-color: #f39c12; /* Laranja vibrante */
+            color: #ffffff;
+            border: 3px solid #e67e22; /* Borda para o verso */
+        }
+
+        .card.matched .card-face {
+            border: 3px solid #2980b9; /* Azul mais escuro para combinadas */
+            box-shadow: 0 0 15px rgba(41, 128, 185, 0.8);
+            opacity: 0.8; /* Leve opacidade para cartas combinadas */
+            transition: opacity 0.5s ease;
+        }
+
+        #resetButton {
+            background-color: #3498db; /* Azul igual ao título */
+            color: white;
+            padding: 14px 30px;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 1.2em;
+            transition: background-color 0.3s ease, transform 0.2s ease;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        #resetButton:hover {
+            background-color: #2980b9; /* Azul mais escuro no hover */
+            transform: translateY(-2px); /* Efeito de "levantar" */
+        }
+
+        #resetButton:active {
+            transform: translateY(0); /* Efeito de "clicar" */
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+        }
+
+        /* Media Queries para Responsividade */
+        @media (max-width: 600px) {
+            .game-container {
+                padding: 20px;
+            }
+
+            h1 {
+                font-size: 2em;
+                margin-bottom: 25px;
+            }
+
+            .game-board {
+                grid-template-columns: repeat(4, 1fr); /* Ajusta para 4 colunas em telas menores */
+                gap: 10px;
+                max-width: 320px; /* Reduz a largura máxima do tabuleiro */
+            }
+
+            .card .card-face {
+                font-size: 2.5em; /* Reduz o tamanho do ícone */
+            }
+
+            #resetButton {
+                padding: 10px 20px;
+                font-size: 1em;
+            }
+        }
+
+        @media (max-width: 400px) {
+            .game-board {
+                gap: 8px;
+                max-width: 280px;
+            }
+            .card .card-face {
+                font-size: 2em;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="game-container">
+        <h1>Jogo da Memória</h1>
+        <div class="game-board" id="gameBoard">
+            </div>
+        <button id="resetButton">Reiniciar Jogo</button>
+    </div>
+
+    <script>
+        // Lógica JavaScript para o jogo da memória
+        document.addEventListener('DOMContentLoaded', () => {
+            const gameBoard = document.getElementById('gameBoard');
+            const resetButton = document.getElementById('resetButton');
+
+            // Ícones que serão usados nas cartas. Cada ícone será duplicado para formar um par.
+            const cardIcons = ['🍎', '🍌', '🍇', '🍓', '🍋', '🍍', '🍉', '🥝'];
+            let cards = []; // Array que conterá todas as cartas do jogo (ícones duplicados e embaralhados)
+            let flippedCards = []; // Armazena as duas cartas que foram viradas em um turno
+            let matchedCards = []; // Armazena as cartas que já formaram um par
+            let lockBoard = false; // Flag para impedir que o jogador vire mais cartas enquanto um par é comparado
+
+            /**
+             * Inicializa o jogo:
+             * - Duplica os ícones para criar pares.
+             * - Embaralha as cartas.
+             * - Reseta o estado do jogo.
+             * - Limpa e recria o tabuleiro no DOM.
+             */
+            function initializeGame() {
+                // Duplica os ícones para criar 16 cartas (8 pares)
+                cards = [...cardIcons, ...cardIcons];
+                shuffleCards(cards); // Embaralha o array de cartas
+
+                // Reseta as variáveis de estado do jogo
+                flippedCards = [];
+                matchedCards = [];
+                lockBoard = false;
+                gameBoard.innerHTML = ''; // Limpa qualquer carta existente no tabuleiro
+
+                // Cria os elementos HTML para cada carta e os adiciona ao tabuleiro
+                cards.forEach((icon, index) => {
+                    const cardElement = document.createElement('div');
+                    cardElement.classList.add('card');
+                    cardElement.dataset.icon = icon; // Armazena o ícone no atributo data-icon para comparação
+                    cardElement.dataset.index = index; // Opcional: armazena o índice original (útil para depuração)
+
+                    // Estrutura interna da carta: uma face traseira e uma face frontal (com o ícone)
+                    cardElement.innerHTML = `
+                        <div class="card-face back"></div>
+                        <div class="card-face front">${icon}</div>
+                    `;
+
+                    // Adiciona um listener de clique para virar a carta
+                    cardElement.addEventListener('click', flipCard);
+                    gameBoard.appendChild(cardElement); // Adiciona a carta ao tabuleiro
+                });
+            }
+
+            /**
+             * Embaralha um array usando o algoritmo Fisher-Yates.
+             * @param {Array} array - O array a ser embaralhado.
+             */
+            function shuffleCards(array) {
+                for (let i = array.length - 1; i > 0; i--) {
+                    const j = Math.floor(Math.random() * (i + 1));
+                    [array[i], array[j]] = [array[j], array[i]]; // Troca elementos de posição
+                }
+            }
+
+            /**
+             * Lida com o evento de virar uma carta.
+             * `this` se refere ao elemento da carta clicada.
+             */
+            function flipCard() {
+                // Se o tabuleiro estiver travado ou a mesma carta for clicada novamente, não faz nada
+                if (lockBoard) return;
+                if (this === flippedCards[0]) return;
+
+                this.classList.add('flipped'); // Adiciona a classe 'flipped' para virar a carta visualmente
+                flippedCards.push(this); // Adiciona a carta ao array de cartas viradas
+
+                // Se duas cartas foram viradas, verifica se são um par
+                if (flippedCards.length === 2) {
+                    lockBoard = true; // Trava o tabuleiro para evitar cliques adicionais
+                    checkForMatch(); // Chama a função de verificação de par
+                }
+            }
+
+            /**
+             * Verifica se as duas cartas viradas são um par.
+             */
+            function checkForMatch() {
+                const [card1, card2] = flippedCards; // Pega as duas cartas viradas
+                const isMatch = card1.dataset.icon === card2.dataset.icon; // Compara os ícones
+
+                if (isMatch) {
+                    // Se for um par, desabilita as cartas (remove listeners e adiciona classe 'matched')
+                    disableCards(card1, card2);
+                } else {
+                    // Se não for um par, desvira as cartas após um curto período
+                    unflipCards();
+                }
+            }
+
+            /**
+             * Desabilita as cartas que formaram um par.
+             * @param {HTMLElement} card1 - A primeira carta do par.
+             * @param {HTMLElement} card2 - A segunda carta do par.
+             */
+            function disableCards(card1, card2) {
+                card1.removeEventListener('click', flipCard); // Remove o listener para que não possam ser clicadas novamente
+                card2.removeEventListener('click', flipCard);
+                card1.classList.add('matched'); // Adiciona a classe 'matched' para estilo visual
+                card2.classList.add('matched');
+                matchedCards.push(card1, card2); // Adiciona ao array de cartas combinadas
+                resetBoard(); // Reseta o estado do tabuleiro
+                checkWin(); // Verifica se o jogo foi vencido
+            }
+
+            /**
+             * Desvira as cartas que não formaram um par.
+             */
+            function unflipCards() {
+                setTimeout(() => {
+                    flippedCards[0].classList.remove('flipped'); // Remove a classe 'flipped' para desvirar
+                    flippedCards[1].classList.remove('flipped');
+                    resetBoard(); // Reseta o estado do tabuleiro
+                }, 1000); // Espera 1 segundo para o jogador ver as cartas antes de desvirar
+            }
+
+            /**
+             * Reseta as variáveis de estado do tabuleiro após um turno.
+             */
+            function resetBoard() {
+                [flippedCards, lockBoard] = [[], false]; // Limpa o array de cartas viradas e destrava o tabuleiro
+            }
+
+            /**
+             * Verifica se todas as cartas foram combinadas, indicando a vitória.
+             */
+            function checkWin() {
+                // Se o número de cartas combinadas for igual ao total de cartas, o jogo foi vencido
+                if (matchedCards.length === cards.length) {
+                    setTimeout(() => {
+                        // Usa alert() para notificar o usuário (em um ambiente real, usaria um modal customizado)
+                        alert('Parabéns! Você encontrou todos os pares!');
+                    }, 500); // Pequeno atraso para a última carta virar completamente
+                }
+            }
+
+            // Adiciona um event listener ao botão de reiniciar
+            resetButton.addEventListener('click', initializeGame);
+
+            // Chama a função de inicialização do jogo quando a página é completamente carregada
+            initializeGame();
+        });
+    </script>
+</body>
+</html>
